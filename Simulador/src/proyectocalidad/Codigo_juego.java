@@ -1,6 +1,4 @@
-
 package proyectocalidad;
-
 import java.util.Random;
 
 

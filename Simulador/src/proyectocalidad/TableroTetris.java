@@ -4,10 +4,16 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -19,7 +25,7 @@ public class TableroTetris extends JPanel implements ActionListener {
 ////TAMAÑO DEL TABLERO//////
     final int tWidth = 10;
     final int tHeight = 22;
-    int record;
+   
     Timer tiempo;
     boolean isFallingFinished = false;
     boolean comienza = false;
@@ -27,6 +33,7 @@ public class TableroTetris extends JPanel implements ActionListener {
     int numLinesRemoved;
     int curX = 0;
     int curY = 0;
+int record=0;
     JLabel panelInferior;
     JLabel panelCentral;
     JLabel panelCentral1;
@@ -34,20 +41,22 @@ public class TableroTetris extends JPanel implements ActionListener {
     PTetris[] tablero;
     //int record1= record;
     
-    
+    String name;
 
-    public TableroTetris(Tetris parent) {
-
+    public TableroTetris(Tetris parent,String nombre) {
+        
        setFocusable(true);
        curPieza = new piezaTetris();
        tiempo = new Timer(400, this);
        tiempo.start(); 
-
+       name=nombre;
        panelInferior = parent.getPanelInferior();
        panelCentral = parent.getPanelCentral();
        tablero = new PTetris[tWidth * tHeight];
-       addKeyListener(new TAdapter());
+       addKeyListener(new TAdapter(parent));
        clearBoard();  
+       
+        record = record();
     }
 
    
@@ -73,8 +82,8 @@ public class TableroTetris extends JPanel implements ActionListener {
     {
         if (isPaused)
             return;
-        System.out.println("numLinesRemoved: "+ numLinesRemoved);
-        System.out.println("RECORD: "+record);
+        
+        
         comienza = true;
         isFallingFinished = false;
         
@@ -96,6 +105,7 @@ public class TableroTetris extends JPanel implements ActionListener {
             panelInferior.setText("PAUSA");
         } else {
             tiempo.start();
+            
             panelInferior.setText("NUMERO DE LINEAS ELIMINADAS: " + String.valueOf( numLinesRemoved)+"          RECORD: "+record);
             
             
@@ -154,6 +164,7 @@ public class TableroTetris extends JPanel implements ActionListener {
         for (int i = 0; i < tHeight * tWidth; ++i){
             tablero[i] = PTetris.Noforma;}
         panelCentral.setText("");
+        
         panelInferior.setText("NUMERO DE LINEAS ELIMINADAS: " + String.valueOf(numLinesRemoved)+ "          RECORD: " + String.valueOf(record));
     }
 
@@ -182,22 +193,74 @@ public class TableroTetris extends JPanel implements ActionListener {
             curPieza.setShape(PTetris.Noforma);
             tiempo.stop();
             comienza = false;
+            
             if(record< numLinesRemoved){
                 record= numLinesRemoved;
                 Font font= new Font("SansSerif", Font.ITALIC, 12);
                 panelCentral.setFont(font);
-                panelCentral.setText("PUNTOS: " + String.valueOf( numLinesRemoved)+ "  NUEVO RECORD: "+ record);
-                panelCentral1.setText("  NUEVO RECORD: "+ record);
+                panelCentral.setText("PUNTOS: " + String.valueOf( numLinesRemoved)+ "  NUEVO RECORD: "+ String.valueOf(record));
+                panelCentral.setText("NUEVO RECORD: "+ String.valueOf(record));
             }else{
-            System.out.println("RECORD2: "+ record);
+                
+            
             panelCentral.setText("PUNTOS: " + String.valueOf( numLinesRemoved));
             panelCentral.getAlignmentY();
             }
+            guardarPuntos(numLinesRemoved);
             panelInferior.setText("                                                    GAME OVER");
+
             
         }
     }
-
+    private void guardarPuntos(int puntos){
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        try {
+            stm = con.getConexion().createStatement();
+            
+           ResultSet rs= stm.executeQuery("SELECT PUNTOSTETRIS FROM USUARIO WHERE id='"+name+"'");
+            
+           if(rs.next())
+           {
+               int point=rs.getInt("PUNTOSTETRIS");
+               
+                    if(point<puntos){
+                       stm.executeUpdate("UPDATE USUARIO SET PUNTOSTETRIS=" + puntos + " WHERE id='"+name+"'"); 
+                    
+           }
+           }
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
+    
+    private int record(){
+        int puntosMaximo= 0 ;
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        
+         try {
+            stm = con.getConexion().createStatement();
+            
+           ResultSet rs= stm.executeQuery("SELECT  PUNTOSTETRIS  FROM USUARIO ORDER BY PUNTOSTETRIS DESC");
+                  
+           if(rs.next()){
+                 puntosMaximo = rs.getInt(1);
+        }              
+               
+               
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return puntosMaximo;
+    }
+    
     private boolean tryMove(piezaTetris newPiece, int newX, int newY) 
     {  
         for (int i = 0; i < 4; ++i) {
@@ -272,6 +335,11 @@ public class TableroTetris extends JPanel implements ActionListener {
     }
     
     class TAdapter extends KeyAdapter {
+        Tetris t;
+        public TAdapter(Tetris t1)
+        {
+            t=t1;
+        }
          public void keyPressed(KeyEvent e) {
              int keycode = e.getKeyCode();
              if (keycode==KeyEvent.VK_ENTER){
@@ -279,8 +347,10 @@ public class TableroTetris extends JPanel implements ActionListener {
                  //Tetris.main(args);
                  iniciar();
              }   
-             if (keycode==KeyEvent.VK_Q){
-                 System.exit(0);
+             if (keycode==KeyEvent.VK_ESCAPE){
+                 
+                     t.setVisible(false);
+                 
              }
              if (!comienza || curPieza.getShape() == PTetris.Noforma) {  
                  return;

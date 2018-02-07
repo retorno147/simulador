@@ -1,6 +1,10 @@
-
 package proyectocalidad;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -20,13 +24,69 @@ public class Jugar2 extends javax.swing.JFrame {
     
     //puntuación
     private int puntuacion=0;
+    String name;
+    int record=0;
     
     
     public Jugar2() {
+                setUndecorated(true);
+
         initComponents();
         aleatoriaCartas();
+        //SacarRecord.setText(" "+ record );
+        //name= nombre;
+        record= record();
       //  SacarPuntuacion.setText(" "+ puntuacion );
        
+    }
+    
+    private void guardarPuntos(int puntos){
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        try {
+            stm = con.getConexion().createStatement();
+             
+           ResultSet rs= stm.executeQuery("SELECT PUNTOSPAR FROM USUARIO WHERE id='"+name+"'");
+            
+           if(rs.next())
+           {
+               int point=rs.getInt("PUNTOSPAR");
+               
+                    if(point<puntos){
+                       stm.executeUpdate("UPDATE USUARIO SET PUNTOSPAR=" + puntos + " WHERE id='"+name+"'"); 
+                    
+           }
+           }
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
+    
+    private int record(){
+        int puntosMaximo= 0 ;
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        
+         try {
+            stm = con.getConexion().createStatement();
+            
+           ResultSet rs= stm.executeQuery("SELECT  PUNTOSPAR  FROM USUARIO ORDER BY PUNTOSPAR DESC");
+                  
+           if(rs.next()){
+                 puntosMaximo = rs.getInt(1);
+        }              
+               
+               
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return puntosMaximo;
     }
 
     private void aleatoriaCartas(){
@@ -139,12 +199,16 @@ public class Jugar2 extends javax.swing.JFrame {
            !Carta10.isEnabled() && !Carta11.isEnabled() && !Carta12.isEnabled() &&
            !Carta13.isEnabled() && !Carta14.isEnabled() && !Carta15.isEnabled() && 
            !Carta16.isEnabled() && !Carta17.isEnabled() && !Carta18.isEnabled() && 
-           !Carta19.isEnabled() && !Carta20.isEnabled())
+           !Carta19.isEnabled() && !Carta20.isEnabled()){
+            
+            guardarPuntos(puntuacion);
+            record= record();
+            //SacarRecord.setText(" "+ record );
+            
             JOptionPane.showMessageDialog(this, "Felicidades. Su puntuacion es: " +puntuacion,"¡GANADOR!", JOptionPane.INFORMATION_MESSAGE);
-    
+        }
        // SiguienteNivel.setEnabled(true);
     }
-    
     
     /**
      * This method is called from within the constructor to initialize the form.

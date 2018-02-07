@@ -6,13 +6,25 @@ import java.awt.event.*;
 
 public class EventoTeclado extends KeyAdapter {
 
-    static boolean w, s, up, down;
+    public static boolean w, s, up, down,space, escape,m;
 
     @Override
     public void keyPressed(KeyEvent e) {
 
         int id = e.getKeyCode();
         
+        if(id==KeyEvent.VK_SPACE)
+        {
+            space=true;
+                        
+        }
+        
+        
+        if(id==KeyEvent.VK_ESCAPE)
+        {
+            escape=true;
+                        
+        }
         //Jugador 1
         if (id == KeyEvent.VK_W) {
             w = true; // sube
@@ -48,6 +60,8 @@ public class EventoTeclado extends KeyAdapter {
         if (id == KeyEvent.VK_DOWN) {
             down = false;
         }
+        
+      
     }
 
 }

@@ -7,6 +7,7 @@ import java.awt.Color;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import static javax.swing.JFrame.EXIT_ON_CLOSE;
 import javax.swing.JLabel;
 import javax.swing.border.Border;
 
@@ -17,11 +18,11 @@ public class Tetris extends JFrame {
     JLabel panelCentral;
  
 
-    public Tetris() {
+    public Tetris(String nombre) {
         
         
         Border border = BorderFactory.createLineBorder(Color.gray, 2);
-        panelSuperior = new JLabel("[Enter] NUEVO JUEGO - [Q] SALIR");
+        panelSuperior = new JLabel("[Enter] NUEVO JUEGO - [ESC] SALIR");
         panelInferior = new JLabel("NUMERO DE LINEAS ELIMINADAS: 0 ");
         panelCentral = new JLabel("");
         panelSuperior.setBorder(border);
@@ -29,10 +30,10 @@ public class Tetris extends JFrame {
         add(panelCentral, BorderLayout.AFTER_LINE_ENDS);
         add(panelSuperior, BorderLayout.NORTH);
         add(panelInferior, BorderLayout.SOUTH);
+        setUndecorated(true);
         
         
-        
-        TableroTetris t = new TableroTetris(this);
+        TableroTetris t = new TableroTetris(this,nombre);
         
         
         
@@ -55,13 +56,5 @@ public class Tetris extends JFrame {
        return panelCentral;
    }
 
-//    public static void main(String[] args) {
-//
-//        Tetris game = new Tetris();
-//        game.setLocationRelativeTo(null);
-//       
-//        game.setVisible(true);
-//
-//    } 
 }    
 

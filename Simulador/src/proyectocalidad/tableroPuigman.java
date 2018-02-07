@@ -14,6 +14,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -21,6 +26,7 @@ import javax.swing.Timer;
 
 public class tableroPuigman extends JPanel implements ActionListener {
 
+    String name;
     private Dimension d;
     private final Font smallfont = new Font("Helvetica", Font.BOLD, 14);
 
@@ -76,17 +82,17 @@ public class tableroPuigman extends JPanel implements ActionListener {
 
     private final int validspeeds[] = {1, 2, 3, 4, 6, 8};
     private final int maxspeed = 6;
-
+    int record=0;
     private int currentspeed = 3;
     private short[] screendata;
     private Timer timer;
-
-    public tableroPuigman() {
-
+    private TAdapter t1;
+    public tableroPuigman(Pacman p1, String nombre) {
+        name=nombre;
         loadimages();
         initVariables();
-
-        addKeyListener(new TAdapter());
+        t1=new TAdapter(p1);
+        addKeyListener(t1);
 
         setFocusable(true);
 
@@ -106,7 +112,7 @@ public class tableroPuigman extends JPanel implements ActionListener {
         ghostspeed = new int[maxghosts];
         dx = new int[4];
         dy = new int[4];
-
+        record=record();
         timer = new Timer(40, this);
         timer.start();
     }
@@ -131,11 +137,33 @@ public class tableroPuigman extends JPanel implements ActionListener {
             }
         }
     }
+private int record(){
+        int puntosMaximo= 0 ;
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        
+         try {
+            stm = con.getConexion().createStatement();
+           ResultSet rs= stm.executeQuery("SELECT  PUNTOSPACMAN  FROM USUARIO ORDER BY PUNTOSPACMAN DESC");
+                  
+           if(rs.next()){
+                 puntosMaximo = rs.getInt(1);
+        }              
+               
+               
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return puntosMaximo;
+    }
 
     private void playGame(Graphics2D g2d) {
 
         if (dying) {
-
+            
             death();
 
         } else {
@@ -153,11 +181,18 @@ public class tableroPuigman extends JPanel implements ActionListener {
         g2d.fillRect(2, scrsize / 2 - 30, scrsize - 2, 50);
         g2d.setColor(Color.white);
         g2d.drawRect(2, scrsize / 2 - 30, scrsize - 2, 50);
-
-        String s = "PUIG-MAN pulsa Espacio para recoger los sobres.";
+            record=record();
+        String s="";
+        if(record>score)
+        {
+        s = "PUIG-MAN pulsa Espacio para recoger los sobres.";
+        }
+        else
+        {
+            s = "NUEVO RECORD pulsa espacio para seguir jugando.";
+        }
         Font small = new Font("Helvetica", Font.BOLD, 15);
         FontMetrics metr = this.getFontMetrics(small);
-
         g2d.setColor(Color.white);
         g2d.setFont(small);
         g2d.drawString(s, (scrsize - metr.stringWidth(s)) / 2, scrsize / 2);
@@ -170,8 +205,11 @@ public class tableroPuigman extends JPanel implements ActionListener {
 
         g.setFont(smallfont);
         g.setColor(new Color(96, 128, 255));
-        s = "Score: " + score;
-        g.drawString(s, scrsize / 2 + 96, scrsize + 16);
+        s = "Puntuacion: " + score + " Record: " + record;
+        String s2="[ESC] Salir";
+        g.drawString(s, scrsize / 2 + 16, scrsize + 16);
+        g.drawString(s2, scrsize / 2 + 16, scrsize + 30);
+        
 
         for (i = 0; i < pacsleft; i++) {
             g.drawImage(pacman2right, i * 28 + 8, scrsize + 1, this);
@@ -214,11 +252,36 @@ public class tableroPuigman extends JPanel implements ActionListener {
 
         if (pacsleft == 0) {
             ingame = false;
+
+
+            guardarPuntos(score);
         }
 
         continueLevel();
     }
-
+private void guardarPuntos(int puntos){
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        try {
+            stm = con.getConexion().createStatement();
+           ResultSet rs= stm.executeQuery("SELECT PUNTOSPACMAN FROM USUARIO WHERE id='"+name+"'");
+            
+           if(rs.next())
+           {
+               int point=rs.getInt("PUNTOSPACMAN");
+               
+                    if(point<puntos){
+                       stm.executeUpdate("UPDATE USUARIO SET PUNTOSPACMAN=" + puntos + " WHERE id='"+name+"'"); 
+                    
+           }
+           }
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
     private void moveGhosts(Graphics2D g2d) {//mover fantasmas
 
         short i;
@@ -551,14 +614,15 @@ public class tableroPuigman extends JPanel implements ActionListener {
 
         g2d.setColor(Color.black);
         g2d.fillRect(0, 0, d.width, d.height);
-
+        g2d.drawString(String.valueOf(record), 50, 100);
         drawMaze(g2d);
         drawScore(g2d);
         doAnim();
 
         if (ingame) {
             playGame(g2d);
-        } else {
+        } else {    
+            
             showIntroScreen(g2d);
         }
 
@@ -568,7 +632,11 @@ public class tableroPuigman extends JPanel implements ActionListener {
     }
 
     class TAdapter extends KeyAdapter {
-
+        Pacman p;
+        public TAdapter(Pacman p1)
+        {
+            p=p1;
+        }
         @Override
         public void keyPressed(KeyEvent e) {
 
@@ -587,9 +655,7 @@ public class tableroPuigman extends JPanel implements ActionListener {
                 } else if (key == KeyEvent.VK_DOWN) {
                     reqdx = 0;
                     reqdy = 1;
-                } else if (key == KeyEvent.VK_ESCAPE && timer.isRunning()) {
-                    ingame = false;
-                } else if (key == KeyEvent.VK_PAUSE) {
+                }  else if (key == KeyEvent.VK_PAUSE) {
                     if (timer.isRunning()) {
                         timer.stop();
                     } else {
@@ -601,6 +667,11 @@ public class tableroPuigman extends JPanel implements ActionListener {
                     ingame = true;
                     initGame();
                 }
+               
+            }
+            if (key == KeyEvent.VK_ESCAPE)
+            {
+                p.setVisible(false);
             }
         }
 

@@ -2,6 +2,9 @@
 package proyectocalidad;
 
 import static java.lang.Thread.sleep;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
@@ -23,16 +26,21 @@ public class Jugar extends javax.swing.JFrame {
     
     //puntuación
     private int puntuacion=0;
+    private int record=0;
+    private String name;
     
     
-    public Jugar() throws InterruptedException  {
+    public Jugar(String nombre) throws InterruptedException  {
         initComponents();
       //  enseñarCarta();
      //   Thread.sleep(2000);
-        
+        record= record();
         aleatoriaCartas();
         SacarPuntuacion.setText(" "+ puntuacion );
         SiguienteNivel.setEnabled(false);
+        SacarRecord.setText(" "+ record );
+        name= nombre;
+        record= record();
     }
     
     /*
@@ -68,6 +76,55 @@ public class Jugar extends javax.swing.JFrame {
         
     }
     */
+    
+     private void guardarPuntos(int puntos){
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        try {
+            stm = con.getConexion().createStatement();
+            
+           ResultSet rs= stm.executeQuery("SELECT PUNTOSPAR FROM USUARIO WHERE id='"+name+"'");
+            
+           if(rs.next())
+           {
+               int point=rs.getInt("PUNTOSPAR");
+               
+                    if(point<puntos){
+                       stm.executeUpdate("UPDATE USUARIO SET PUNTOSPAR=" + puntos + " WHERE id='"+name+"'"); 
+                    
+           }
+           }
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
+    
+    private int record(){
+        int puntosMaximo= 0 ;
+                 ConexionOracle con= new ConexionOracle();
+         con.Conexion();
+         Statement stm;
+        
+         try {
+            stm = con.getConexion().createStatement();
+            
+           ResultSet rs= stm.executeQuery("SELECT  PUNTOSPAR  FROM USUARIO ORDER BY PUNTOSPAR DESC");
+                  
+           if(rs.next()){
+                 puntosMaximo = rs.getInt(1);
+        }              
+               
+               
+           
+        } catch (SQLException ex) {
+            Logger.getLogger(Formulario.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return puntosMaximo;
+    }
     
     private void aleatoriaCartas(){
         int[] cartas= cod_juego.getCarta();
@@ -106,6 +163,7 @@ public class Jugar extends javax.swing.JFrame {
             botones[1]=btn;            
             hayCarta= true;
             puntuacion +=2;
+            
            // SacarPuntuacion.setText(" "+ puntuacion );
             ganar();
         }
@@ -160,9 +218,13 @@ public class Jugar extends javax.swing.JFrame {
         if(!Carta1.isEnabled() && !Carta2.isEnabled() && !Carta3.isEnabled() && 
            !Carta4.isEnabled() && !Carta5.isEnabled() && !Carta6.isEnabled() &&
            !Carta7.isEnabled() && !Carta8.isEnabled() && !Carta9.isEnabled() &&
-           !Carta10.isEnabled() && !Carta11.isEnabled() && ! Carta12.isEnabled())
+           !Carta10.isEnabled() && !Carta11.isEnabled() && ! Carta12.isEnabled()){
+            guardarPuntos(puntuacion);
+            record= record();
+            SacarRecord.setText(" "+ record );
+            
             JOptionPane.showMessageDialog(this, "Felicidades. Su puntuacion es: " +puntuacion,"¡GANADOR!", JOptionPane.INFORMATION_MESSAGE);
-    
+        }
         SiguienteNivel.setEnabled(true);
     }
     
@@ -188,6 +250,8 @@ public class Jugar extends javax.swing.JFrame {
         Reiniciar = new javax.swing.JButton();
         Puntuacion = new javax.swing.JLabel();
         SacarPuntuacion = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        SacarRecord = new javax.swing.JLabel();
         SiguienteNivel = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -472,6 +536,16 @@ public class Jugar extends javax.swing.JFrame {
 
         SacarPuntuacion.setText(" ");
 
+        jLabel2.setFont(new java.awt.Font("Cambria", 0, 13)); // NOI18N
+        jLabel2.setText("Record:");
+        jLabel2.setMaximumSize(new java.awt.Dimension(65, 16));
+        jLabel2.setMinimumSize(new java.awt.Dimension(65, 16));
+        jLabel2.setPreferredSize(new java.awt.Dimension(65, 16));
+
+        SacarRecord.setMaximumSize(new java.awt.Dimension(3, 14));
+        SacarRecord.setMinimumSize(new java.awt.Dimension(3, 14));
+        SacarRecord.setPreferredSize(new java.awt.Dimension(3, 14));
+
         SiguienteNivel.setText("Siguiente Nivel");
         SiguienteNivel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -496,11 +570,15 @@ public class Jugar extends javax.swing.JFrame {
                                 .addComponent(Puntuacion)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(SacarPuntuacion, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(173, 173, 173)))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(SacarRecord, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(88, 88, 88)))
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(Reiniciar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(SiguienteNivel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -510,10 +588,13 @@ public class Jugar extends javax.swing.JFrame {
                     .addComponent(jLabel1)
                     .addComponent(Reiniciar))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(Puntuacion)
-                    .addComponent(SacarPuntuacion)
-                    .addComponent(SiguienteNivel))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(Puntuacion)
+                        .addComponent(SacarPuntuacion)
+                        .addComponent(SiguienteNivel)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 18, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(SacarRecord, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -701,8 +782,10 @@ public class Jugar extends javax.swing.JFrame {
     private javax.swing.JLabel Puntuacion;
     private javax.swing.JButton Reiniciar;
     private javax.swing.JLabel SacarPuntuacion;
+    private javax.swing.JLabel SacarRecord;
     private javax.swing.JButton SiguienteNivel;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     // End of variables declaration//GEN-END:variables
 }
